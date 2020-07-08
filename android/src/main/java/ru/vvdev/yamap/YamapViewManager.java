@@ -41,6 +41,7 @@ public class YamapViewManager extends ViewGroupManager<YamapView> {
     @Override
     public Map<String, Object> getExportedCustomDirectEventTypeConstants() {
         return MapBuilder.<String, Object>builder()
+                .put("CameraPosition", MapBuilder.of("registrationName", "onCameraPositionChanged"))
                 .build();
     }
 

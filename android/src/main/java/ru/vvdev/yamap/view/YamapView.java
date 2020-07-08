@@ -3,6 +3,7 @@ package ru.vvdev.yamap.view;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -28,7 +29,9 @@ import com.yandex.mapkit.geometry.Point;
 import com.yandex.mapkit.geometry.Polyline;
 import com.yandex.mapkit.geometry.SubpolylineHelper;
 import com.yandex.mapkit.layers.ObjectEvent;
+import com.yandex.mapkit.map.CameraListener;
 import com.yandex.mapkit.map.CameraPosition;
+import com.yandex.mapkit.map.CameraUpdateSource;
 import com.yandex.mapkit.map.CircleMapObject;
 import com.yandex.mapkit.map.PlacemarkMapObject;
 import com.yandex.mapkit.map.PolygonMapObject;
@@ -64,7 +67,7 @@ import ru.vvdev.yamap.utils.Callback;
 import ru.vvdev.yamap.utils.ImageLoader;
 import ru.vvdev.yamap.utils.RouteManager;
 
-public class YamapView extends MapView implements UserLocationObjectListener {
+public class YamapView extends MapView implements UserLocationObjectListener, CameraListener {
     // default colors for known vehicles
     // "underground" actually get color considering with his own branch"s color
     private final static Map<String, String> DEFAULT_VEHICLE_COLORS = new HashMap<String, String>() {{
@@ -93,6 +96,7 @@ public class YamapView extends MapView implements UserLocationObjectListener {
         super(context);
         DirectionsFactory.initialize(context);
         drivingRouter = DirectionsFactory.getInstance().createDrivingRouter();
+        getMap().addCameraListener(this);
     }
 
     // ref methods
@@ -442,5 +446,17 @@ public class YamapView extends MapView implements UserLocationObjectListener {
                 arrow.setIcon(ImageProvider.fromBitmap(userLocationBitmap));
             }
         }
+    }
+
+    @Override
+    public void onCameraPositionChanged(@NonNull com.yandex.mapkit.map.Map map, @NonNull CameraPosition cameraPosition, @NonNull CameraUpdateSource cameraUpdateSource, boolean b) {
+        WritableMap event = Arguments.createMap();
+        event.putDouble("lon", cameraPosition.getTarget().getLongitude());
+        event.putDouble("lat", cameraPosition.getTarget().getLatitude());
+        ReactContext reactContext = (ReactContext)getContext();
+        reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                getId(),
+                "CameraPosition",
+                event);
     }
 }

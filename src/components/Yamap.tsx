@@ -20,6 +20,7 @@ const YaMapNativeComponent = requireNativeComponent('YamapView');
 export interface YaMapProps extends ViewProps {
   userLocationIcon: ImageSourcePropType;
   showUserPosition?: boolean;
+  onCameraChanged?: ({lat, lon}: {lat: number, lon: number}) => {lat: number, lon: number};
 }
 
 export class YaMap extends React.Component<YaMapProps> {
@@ -82,30 +83,30 @@ export class YaMap extends React.Component<YaMapProps> {
 
   public fitAllMarkers() {
     UIManager.dispatchViewManagerCommand(
-      findNodeHandle(this),
-      this.getCommand('fitAllMarkers'),
-      [],
+        findNodeHandle(this),
+        this.getCommand('fitAllMarkers'),
+        [],
     );
   }
 
   public setCenter(center: { lon: number, lat: number, zoom?: number }, zoom: number = center.zoom || 10, azimuth: number = 0, tilt: number = 0, duration: number = 0, animation: Animation = Animation.SMOOTH) {
     UIManager.dispatchViewManagerCommand(
-      findNodeHandle(this),
-      this.getCommand('setCenter'),
-      [center, zoom, azimuth, tilt, duration, animation],
+        findNodeHandle(this),
+        this.getCommand('setCenter'),
+        [center, zoom, azimuth, tilt, duration, animation],
     );
   }
 
   private _findRoutes(points: Point[], vehicles: Vehicles[], callback: ((event: RoutesFoundEvent<DrivingInfo | MasstransitInfo>) => void) | ((event: RoutesFoundEvent<DrivingInfo>) => void) | ((event: RoutesFoundEvent<MasstransitInfo>) => void)) {
     const cbId = CallbacksManager.addCallback(callback);
     const args
-      = Platform.OS === 'ios'
+        = Platform.OS === 'ios'
         ? [{ points, vehicles, id: cbId }]
         : [points, vehicles, cbId];
     UIManager.dispatchViewManagerCommand(
-      findNodeHandle(this),
-      this.getCommand('findRoutes'),
-      args,
+        findNodeHandle(this),
+        this.getCommand('findRoutes'),
+        args,
     );
   }
 
@@ -121,26 +122,34 @@ export class YaMap extends React.Component<YaMapProps> {
     CallbacksManager.call(event.nativeEvent.id, event);
   }
 
+  private onCameraPositionChanged = (event: any) => {
+    if (this.props.onCameraChanged) {
+      this.props.onCameraChanged(event.nativeEvent);
+    }
+  }
+
   private resolveImageUri(img: ImageSourcePropType) {
     return img ? resolveAssetSource(img).uri : '';
   }
 
   private getProps() {
     return (
-      {
-        ...this.props,
-        onRouteFound: this.processRoute,
-        userLocationIcon: this.resolveImageUri(this.props.userLocationIcon),
-      }
+        {
+          ...this.props,
+          onRouteFound: this.processRoute,
+          onCameraPositionChanged: this.onCameraPositionChanged,
+          userLocationIcon: this.resolveImageUri(this.props.userLocationIcon),
+        }
     );
   }
 
   render() {
+
     return (
-      <YaMapNativeComponent
-        {...this.getProps()}
-        ref={this.map}
-      />
+        <YaMapNativeComponent
+            {...this.getProps()}
+            ref={this.map}
+        />
     );
   }
 }

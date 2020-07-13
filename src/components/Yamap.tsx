@@ -11,7 +11,7 @@ import {
 // @ts-ignore
 import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource';
 import CallbacksManager from '../utils/CallbacksManager';
-import { Animation, Point, DrivingInfo, MasstransitInfo, RoutesFoundEvent, Vehicles } from '../interfaces';
+import { Animation, Point, DrivingInfo, MasstransitInfo, RoutesFoundEvent, Vehicles, SearchResult } from '../interfaces';
 
 const { yamap: NativeYamapModule } = NativeModules;
 
@@ -21,7 +21,7 @@ export interface YaMapProps extends ViewProps {
   userLocationIcon: ImageSourcePropType;
   showUserPosition?: boolean;
   onCameraChanged?: ({lat, lon}: {lat: number, lon: number}) => void;
-  onSearch?: (results: {fullName: string, displayName: string}[]) => void;
+  onSearch?: (results: SearchResult[]) => void;
 }
 
 export class YaMap extends React.Component<YaMapProps> {

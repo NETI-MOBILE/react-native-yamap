@@ -9,6 +9,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.yandex.mapkit.MapKitFactory;
+import com.yandex.mapkit.search.SearchFactory;
 import com.yandex.mapkit.transport.TransportFactory;
 import com.yandex.runtime.Error;
 import com.yandex.runtime.i18n.I18nManagerFactory;
@@ -17,6 +18,7 @@ import com.yandex.runtime.i18n.LocaleResetListener;
 import com.yandex.runtime.i18n.LocaleUpdateListener;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -54,8 +56,20 @@ public class RNYamapModule extends ReactContextBaseJavaModule {
             public void run() {
                 MapKitFactory.setApiKey(apiKey);
                 MapKitFactory.initialize(reactContext);
+                SearchFactory.initialize(reactContext);
                 TransportFactory.initialize(reactContext);
                 MapKitFactory.getInstance().onStart();
+                I18nManagerFactory.setLocale("ru", "RU", new LocaleUpdateListener() {
+                    @Override
+                    public void onLocaleUpdated() {
+
+                    }
+
+                    @Override
+                    public void onLocaleUpdateError(@NonNull Error error) {
+
+                    }
+                });
             }
         }));
     }

@@ -10,11 +10,13 @@ import androidx.annotation.NonNull;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.yandex.mapkit.Animation;
+import com.yandex.mapkit.GeoObjectCollection;
 import com.yandex.mapkit.RequestPoint;
 import com.yandex.mapkit.RequestPointType;
 import com.yandex.mapkit.directions.DirectionsFactory;
@@ -33,10 +35,19 @@ import com.yandex.mapkit.map.CameraListener;
 import com.yandex.mapkit.map.CameraPosition;
 import com.yandex.mapkit.map.CameraUpdateSource;
 import com.yandex.mapkit.map.CircleMapObject;
+import com.yandex.mapkit.map.MapObjectCollection;
 import com.yandex.mapkit.map.PlacemarkMapObject;
 import com.yandex.mapkit.map.PolygonMapObject;
 import com.yandex.mapkit.map.PolylineMapObject;
+import com.yandex.mapkit.map.VisibleRegionUtils;
 import com.yandex.mapkit.mapview.MapView;
+import com.yandex.mapkit.search.Response;
+import com.yandex.mapkit.search.SearchFactory;
+import com.yandex.mapkit.search.SearchManager;
+import com.yandex.mapkit.search.SearchManagerType;
+import com.yandex.mapkit.search.SearchOptions;
+import com.yandex.mapkit.search.SearchType;
+import com.yandex.mapkit.search.SuggestItem;
 import com.yandex.mapkit.transport.TransportFactory;
 import com.yandex.mapkit.transport.masstransit.MasstransitOptions;
 import com.yandex.mapkit.transport.masstransit.MasstransitRouter;
@@ -67,7 +78,7 @@ import ru.vvdev.yamap.utils.Callback;
 import ru.vvdev.yamap.utils.ImageLoader;
 import ru.vvdev.yamap.utils.RouteManager;
 
-public class YamapView extends MapView implements UserLocationObjectListener, CameraListener {
+public class YamapView extends MapView implements UserLocationObjectListener, CameraListener, SearchManager.SuggestListener {
     // default colors for known vehicles
     // "underground" actually get color considering with his own branch"s color
     private final static Map<String, String> DEFAULT_VEHICLE_COLORS = new HashMap<String, String>() {{
@@ -79,6 +90,10 @@ public class YamapView extends MapView implements UserLocationObjectListener, Ca
         put("trolleybus", "#55CfDC");
         put("walk", "#333333");
     }};
+    private final double BOX_SIZE = 0.2;
+    private final SearchOptions SEARCH_OPTIONS =  new SearchOptions().setSearchTypes(
+            SearchType.GEO.value);
+    private SearchManager searchManager;
     private String userLocationIcon = "";
     private Bitmap userLocationBitmap = null;
 
@@ -94,8 +109,7 @@ public class YamapView extends MapView implements UserLocationObjectListener, Ca
 
     public YamapView(Context context) {
         super(context);
-        DirectionsFactory.initialize(context);
-        drivingRouter = DirectionsFactory.getInstance().createDrivingRouter();
+        searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED);
         getMap().addCameraListener(this);
     }
 
@@ -458,5 +472,36 @@ public class YamapView extends MapView implements UserLocationObjectListener, Ca
                 getId(),
                 "CameraPosition",
                 event);
+    }
+
+    @Override
+    public void onSuggestResponse(@NonNull List<SuggestItem> suggest) {
+        WritableArray results = Arguments.createArray();
+        for (int i = 0; i < Math.min(50, suggest.size()); i++) {
+            WritableMap suggestMap = Arguments.createMap();
+            suggestMap.putString("displayName", suggest.get(i).getDisplayText());
+            suggestMap.putString("fullName", suggest.get(i).getTitle().getText());
+            results.pushMap(suggestMap);
+        }
+        ReactContext reactContext = (ReactContext)getContext();
+        WritableMap suggestions = Arguments.createMap();
+        suggestions.putArray("suggestions", results);
+        reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                getId(),
+                "OnSearch",
+                suggestions);
+    }
+
+    @Override
+    public void onSuggestError(Error error) {
+        Log.d("SuggestError", "error");
+    }
+
+    public void requestSuggest(String query) {
+        Point CENTER_COORD = getMap().getCameraPosition().getTarget();
+        BoundingBox BOUNDING_BOX_LAYER = new BoundingBox(
+                new Point(CENTER_COORD.getLatitude() - BOX_SIZE, CENTER_COORD.getLongitude() - BOX_SIZE),
+                new Point(CENTER_COORD.getLatitude() + BOX_SIZE, CENTER_COORD.getLongitude() + BOX_SIZE));
+        searchManager.suggest(query, BOUNDING_BOX_LAYER, SEARCH_OPTIONS, this);
     }
 }

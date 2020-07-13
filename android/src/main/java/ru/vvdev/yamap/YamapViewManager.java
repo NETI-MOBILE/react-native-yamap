@@ -42,6 +42,7 @@ public class YamapViewManager extends ViewGroupManager<YamapView> {
     public Map<String, Object> getExportedCustomDirectEventTypeConstants() {
         return MapBuilder.<String, Object>builder()
                 .put("CameraPosition", MapBuilder.of("registrationName", "onCameraPositionChanged"))
+                .put("OnSearch", MapBuilder.of("registrationName", "onSuggest"))
                 .build();
     }
 
@@ -72,6 +73,9 @@ public class YamapViewManager extends ViewGroupManager<YamapView> {
         switch (commandType) {
             case "setCenter":
                 setCenter(castToYaMapView(view), args.getMap(0), (float) args.getDouble(1), (float) args.getDouble(2), (float) args.getDouble(3), (float) args.getDouble(4), args.getInt(5));
+                return;
+            case "search":
+                view.requestSuggest(args.getString(0));
                 return;
             case "fitAllMarkers":
                 fitAllMarkers(view);

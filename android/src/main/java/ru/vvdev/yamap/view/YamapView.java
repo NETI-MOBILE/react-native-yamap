@@ -467,6 +467,7 @@ public class YamapView extends MapView implements UserLocationObjectListener, Ca
         WritableMap event = Arguments.createMap();
         event.putDouble("lon", cameraPosition.getTarget().getLongitude());
         event.putDouble("lat", cameraPosition.getTarget().getLatitude());
+        event.putDouble("zoom", cameraPosition.getZoom());
         ReactContext reactContext = (ReactContext)getContext();
         reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                 getId(),

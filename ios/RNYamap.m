@@ -1,5 +1,8 @@
 #import "RNYamap.h"
 #import <YandexMapKit/YMKMapKitFactory.h>
+#import <Foundation/Foundation.h>
+#import <React/RCTBridgeModule.h>
+#import "React/RCTViewManager.h"
 
 @implementation yamap
 
@@ -15,7 +18,6 @@ static NSString * _selectedMarkerIcon;
     if (self) {
         map = [[YamapView alloc] init];
     }
-
     return self;
 }
 
@@ -32,21 +34,25 @@ RCT_EXPORT_METHOD(init: (NSString *) apiKey) {
 }
 
 RCT_EXPORT_METHOD(setLocale: (NSString *) locale successCallback:(RCTResponseSenderBlock)successCb errorCallback:(RCTResponseSenderBlock) errorCb) {
-    [YRTI18nManagerFactory setLocaleWithLocale:locale];
+    //    [YRTI18nManagerFactory setLocaleWithLanguage:"ru" country:<#(nonnull NSString *)#> localeUpdateDelegate:<#^(NSError * _Nullable error)localeUpdateDelegate#>:locale];
     successCb(@[]);
 }
 
 RCT_EXPORT_METHOD(resetLocale:(RCTResponseSenderBlock)successCb errorCallback:(RCTResponseSenderBlock) errorCb) {
-    [YRTI18nManagerFactory setLocaleWithLocale:nil];
+    //    [YRTI18nManagerFactory setLocaleWithLocale:nil];
     successCb(@[]);
 }
 
 RCT_EXPORT_METHOD(getLocale:(RCTResponseSenderBlock)successCb errorCallback:(RCTResponseSenderBlock) errorCb) {
-    [YRTI18nManagerFactory getLocaleWithLocaleDelegate:^(NSString * _Nonnull locale) {
-        successCb(@[locale]);
-    }];
+    //    [YRTI18nManagerFactory getLocaleWithLocaleDelegate:^(NSString * _Nonnull locale) {
+    //        successCb(@[locale]);
+    //    }];
 }
 
 RCT_EXPORT_MODULE()
 
+@end
+
+@interface RCT_EXTERN_MODULE(SuggestController, RCTViewManager)
+RCT_EXTERN_METHOD(suggest:(NSString *)query )
 @end

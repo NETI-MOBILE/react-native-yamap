@@ -15,7 +15,7 @@
 RCT_EXPORT_MODULE()
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"onRouteFound"];
+    return @[@"onRouteFound", @"onCameraPositionChanged"];
 }
 
 - (instancetype)init {
@@ -34,8 +34,17 @@ RCT_EXPORT_MODULE()
     [map setCenter: pos withDuration: duration withAnimation: animation];
 }
 
++ (BOOL)requiresMainQueueSetup
+{
+    return YES;  // only do this if your module initialization relies on calling UIKit!
+}
+
 // props
 RCT_EXPORT_VIEW_PROPERTY(onRouteFound, RCTBubblingEventBlock)
+
+RCT_EXPORT_VIEW_PROPERTY(onCameraPositionChanged, RCTBubblingEventBlock)
+
+RCT_EXPORT_VIEW_PROPERTY(onSuggest, RCTBubblingEventBlock)
 
 RCT_CUSTOM_VIEW_PROPERTY(userLocationIcon, NSString, RNYMView) {
     if (json && view) {
@@ -87,6 +96,17 @@ RCT_EXPORT_METHOD(setCenter:(nonnull NSNumber*) reactTag center:(NSDictionary*_N
             return;
         }
         [self setCenterForMap: view center:center zoom: [zoom floatValue] azimuth: [azimuth floatValue] tilt: [tilt floatValue] duration: [duration floatValue] animation: [animation intValue]];
+    }];
+}
+
+RCT_EXPORT_METHOD(search:(nonnull NSNumber*) reactTag query:(NSString*_Nonnull) query) {
+    [self.bridge.uiManager addUIBlock:^(RCTUIManager *uiManager, NSDictionary<NSNumber *,UIView *> *viewRegistry) {
+        RNYMView *view = (RNYMView*) viewRegistry[reactTag];
+        if (!view || ![view isKindOfClass:[RNYMView class]]) {
+            RCTLogError(@"Cannot find NativeView with tag #%@", reactTag);
+            return;
+        }
+        [view fetchSuggestions:query];
     }];
 }
 

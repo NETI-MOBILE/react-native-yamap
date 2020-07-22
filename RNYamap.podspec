@@ -8,7 +8,8 @@ Pod::Spec.new do |s|
     s.homepage     = "vvdev.ru"
     s.license      = "MIT"
     s.author       = { package["author"]["name"] => package["author"]["email"] }
-    s.platform     = :ios, "9.0"
+    s.platform = :ios, "9.0"
+    s.swift_version = "4.2"
     s.source       = { :git => "https://github.com/author/RNYamap.git", :tag => "master" }
     s.source_files = "ios/**/*.{h,m}"
     # s.requires_arc = true
@@ -17,4 +18,5 @@ Pod::Spec.new do |s|
     s.dependency "YandexMapKit"
     s.dependency 'YandexMapKitDirections'
     s.dependency "YandexMapKitTransport"
+    s.dependency "YandexMapKitSearch"
 end

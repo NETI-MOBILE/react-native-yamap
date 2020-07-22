@@ -6,6 +6,9 @@
 #import <YandexMapKit/YMKMapView.h>
 #import <YandexMapKit/YMKBoundingBox.h>
 #import <YandexMapKit/YMKCameraPosition.h>
+#import <YandexMapKitSearch/YMKSearch.h>
+#import <YandexMapKitSearch/YMKSearchManager.h>
+#import <YandexMapKitSearch/YMKSearchSession.h>
 #import <YandexMapKit/YMKCircle.h>
 #import <YandexMapKit/YMKPolyline.h>
 #import <YandexMapKit/YMKPolylineMapObject.h>
@@ -74,6 +77,11 @@
     currentRouteInfo = [[NSMutableArray alloc] init];
     lastKnownRoutePoints = [[NSMutableArray alloc] init];
     vehicleColors = [[NSMutableDictionary alloc] init];
+    self -> _searchManager = [YMKSearch.sharedInstance createSearchManagerWithSearchManagerType:YMKSearchSearchManagerTypeCombined];
+    self -> _suggestSession = [self -> _searchManager createSuggestSession];
+    self -> _options = [YMKSuggestOptions new];
+    self -> _options.suggestTypes = YMKSuggestTypeGeo;
+    self -> _boundingBox = [YMKBoundingBox boundingBoxWithSouthWest:[YMKPoint pointWithLatitude:55.55 longitude:37.42] northEast:[YMKPoint pointWithLatitude:55.95 longitude:37.82]];
     [vehicleColors setObject:@"#59ACFF" forKey:@"bus"];
     [vehicleColors setObject:@"#7D60BD" forKey:@"minibus"];
     [vehicleColors setObject:@"#F8634F" forKey:@"railway"];
@@ -82,7 +90,51 @@
     [vehicleColors setObject:@"#BDCCDC" forKey:@"underground"];
     [vehicleColors setObject:@"#55CfDC" forKey:@"trolleybus"];
     [vehicleColors setObject:@"#2d9da8" forKey:@"walk"];
+    [self.mapWindow.map addCameraListenerWithCameraListener:self];
     return self;
+}
+
+- (void) fetchSuggestions:(NSString *)query {
+    NSLog(@"searchQuery: %@", query);
+    [self -> _suggestSession reset];
+    YMKSearchSuggestSessionResponseHandler responseHandler = ^(NSArray<YMKSuggestItem *> *suggestItems, NSError *error) {
+        NSLog(@"SUGGESTION");
+        if (error) {
+            NSLog(@"Error");
+        }
+        NSMutableArray* suggestResult = [[NSMutableArray alloc]init];
+        unsigned long suggestionsSize = MIN(10, [suggestItems count]);
+        
+        for (int i = 0; i < suggestionsSize; i++) {
+            NSString* text = [[suggestItems objectAtIndex:i] title].text;
+            [suggestResult addObject:@{@"displayName": [[suggestItems objectAtIndex:i] displayText], @"fullName":  text}];
+            //            NSLog(@"SUGGEST: %@", [[suggestItems objectAtIndex:i] displayText]);
+        }
+        
+        NSMutableDictionary* resultObject = [[NSMutableDictionary alloc]init];
+        [resultObject setValue:suggestResult forKey:@"suggestions"];
+        if (self.onSuggest) {
+            self.onSuggest(resultObject);
+        }
+    };
+    YMKCameraPosition* cameraPosition = [self.mapWindow.map cameraPosition];
+    double boxSize = 0.2;
+    YMKBoundingBox* boundingBox = [YMKBoundingBox boundingBoxWithSouthWest:[YMKPoint pointWithLatitude:(cameraPosition.target.latitude - boxSize) longitude:(cameraPosition.target.longitude - boxSize)] northEast:[YMKPoint pointWithLatitude:(cameraPosition.target.latitude + boxSize) longitude:(cameraPosition.target.longitude + boxSize)]];
+    [self -> _suggestSession suggestWithText:query window: boundingBox suggestOptions:self ->_options responseHandler: responseHandler];
+}
+
+- (void) onCameraPositionChangedWithMap:(nonnull YMKMap *)map
+                         cameraPosition:(nonnull YMKCameraPosition *)cameraPosition
+                     cameraUpdateSource:(YMKCameraUpdateSource)cameraUpdateSource
+                               finished:(BOOL)finished {
+    if (self.onCameraPositionChanged) {
+        NSLog(@"onCameraPositionChangedWithMap");
+        self.onCameraPositionChanged(@{
+            @"lat": @(cameraPosition.target.latitude),
+            @"lon": @(cameraPosition.target.longitude),
+            @"zoom": @(cameraPosition.zoom),
+                                     });
+    }
 }
 
 -(NSDictionary*) convertDrivingRouteSection:(YMKDrivingRoute*) route withSection:(YMKDrivingSection*) section {
@@ -248,7 +300,7 @@
         for (int i = 0; i < [routes count]; ++i) {
             YMKMasstransitRoute* _route = [routes objectAtIndex:i];
             NSMutableDictionary* jsonRoute = [[NSMutableDictionary alloc] init];
-
+            
             [jsonRoute setValue:[NSString stringWithFormat:@"%d", i] forKey:@"id"];
             NSMutableArray* sections = [[NSMutableArray alloc] init];
             NSArray<YMKMasstransitSection *>* _sections = [_route sections];
@@ -298,7 +350,7 @@
     if (duration > 0) {
         YMKAnimationType anim = animation == 0 ? YMKAnimationTypeSmooth : YMKAnimationTypeLinear;
         [self.mapWindow.map moveWithCameraPosition:position animationType:[YMKAnimation animationWithType:anim duration: duration] cameraCallback: ^(BOOL completed) {
-         }];
+        }];
     } else {
         [self.mapWindow.map moveWithCameraPosition:position];
     }
@@ -423,10 +475,10 @@
         YMKPlacemarkMapObject* obj = [objects addPlacemarkWithPoint:[marker getPoint]];
         [marker setMapObject:obj];
     } else if ([subview isKindOfClass:[YamapCircleView class]]) {
-           YMKMapObjectCollection *objects = self.mapWindow.map.mapObjects;
-           YamapCircleView* circle = (YamapCircleView*) subview;
-           YMKCircleMapObject* obj = [objects addCircleWithCircle:[circle getCircle] strokeColor:UIColor.blackColor strokeWidth:0.f fillColor:UIColor.blackColor];
-           [circle setMapObject:obj];
+        YMKMapObjectCollection *objects = self.mapWindow.map.mapObjects;
+        YamapCircleView* circle = (YamapCircleView*) subview;
+        YMKCircleMapObject* obj = [objects addCircleWithCircle:[circle getCircle] strokeColor:UIColor.blackColor strokeWidth:0.f fillColor:UIColor.blackColor];
+        [circle setMapObject:obj];
     } else {
         NSArray<id<RCTComponent>> *childSubviews = [subview reactSubviews];
         for (int i = 0; i < childSubviews.count; i++) {

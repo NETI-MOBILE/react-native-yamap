@@ -52,7 +52,3 @@ RCT_EXPORT_METHOD(getLocale:(RCTResponseSenderBlock)successCb errorCallback:(RCT
 RCT_EXPORT_MODULE()
 
 @end
-
-@interface RCT_EXTERN_MODULE(SuggestController, RCTViewManager)
-RCT_EXTERN_METHOD(suggest:(NSString *)query )
-@end
